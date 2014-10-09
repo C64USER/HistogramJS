@@ -1,0 +1,271 @@
+<html>
+<script language="JAVASCRIPT">
+var barritas = new Array(2);
+function Graph(config){
+	// Asignando los atributso al "objeto" Graph
+	this.canvas = config.canvas;
+	this.maxValue = config.maxValue;
+	
+	this.numBars = config.bars;  // Numero de barras en el histograma
+	this.gridOn = config.gridOn; // Enciende o apaga el "grid"
+	
+	this.interBarOffset = 10;	// 10 pixeles minimos entre barra y barra
+	this.gridSize = 20;			// tamano del recuadro
+      
+	this.axisXOffset = 100;  	
+	this.axisYOffset = 50;
+	this.axisColor = "#5555AA";	// Color de los ejes.  
+
+	// Determina el largo de los ejes basandonos en el ancho del canvas y 
+	// restandoselo a la posicion en donde vamos a empezar a dibujarlos
+	this.axisXLength = this.canvas.width - this.axisXOffset;
+	this.axisYLength = this.canvas.height - this.axisYOffset;
+	
+	// Escala todo
+	
+	this.barWidth = ( this.axisXLength - ( 1 + this.numBars) * this.interBarOffset) / this.numBars;
+	// (1 + this.numBars) * this.interBarOffset  => Determina la cantidad de espacios que voy a tener entre las barras
+	// Al dividirlo entre el numero de barras se cual va a ser el ancho de las barras para cada valor
+	
+	// Calcula cuanto va a ser la razon entre el valor y el maximo en el eje de Y
+	this.blockTicks = this.axisYLength / this.maxValue;
+	
+	// Inicia donde va a empezar la primera barra (Pegada al eje de Y)
+	this.prevBar = this.axisYOffset;
+	
+	this.context = this.canvas.getContext("2d");
+	
+	alert(this.context);
+    this.drawXAxis();	// Grafique el eje de X
+    this.drawYAxis();	// Grafique el eje de Y
+	this.drawScale();	// Dibuja la escala
+	if (this.gridOn == 1) this.drawGrid();	// Dibuja el grid
+    
+}
+ 
+Graph.prototype.drawGrid = function(){
+	var ctx = this.context;
+	ctx.beginPath();
+	ctx.strokeStyle = "#DDDDDD";
+	ctx.lineWidth = 1;
+	for (var x=this.axisYOffset+10; x <= this.canvas.width; x+=this.gridSize) {
+		ctx.moveTo(x, 0);
+		ctx.lineTo(x, this.axisYLength-2);
+	}
+	for (var y=this.axisYLength-12; y > 0; y-=this.gridSize) {
+		ctx.moveTo(this.canvas.width, y);
+		ctx.lineTo(this.axisYOffset+2, y);
+	}
+	ctx.stroke();
+}
+ 
+Graph.prototype.drawScale = function(){
+	// Dibuja la escala  al lado del eje de Y
+	// Note que enrealidad el origen dibujado no concuerda con el origen del canvas
+	
+	var ctx = this.context;		// Get the context
+	var str = new String();		
+	
+	// Inciamos la X pegada al eje de Y
+	var posicion = this.axisYOffset;	
+	
+	// El primer  valor que imprimos en la escala es el valor mayor
+	str += this.maxValue;
+	
+	// Escogemos el font a utilizar
+	ctx.font = "bold 12px sans-serif";
+	
+	// De acuerdo al largo del string movemos la X hacia atras
+	posicion -= str.length*8;
+	
+	// Imprime el string (10) es el offset de la Y hacia abajo
+	ctx.fillText(str,posicion,10);
+	
+	
+	// Asigna nuevo valor al string que es la mitad del eje
+	str = "" + Math.floor(this.maxValue / 2);
+	
+	// posicion nueva de la X 
+	posicion = this.axisYOffset-str.length*8;
+	
+	// Imprime el str en la X marcada por posicion y la Y sera
+	// 10 pixeles hacia abajo del origen mas la mitad del largo del eje
+	ctx.fillText(str,posicion,10+this.axisYLength/2);
+	
+	// Posicionamos el origen de la grafica pero ojo no guarda relacion
+	// con el canvas.
+	str = "0";
+	posicion = this.axisYOffset-16;
+	ctx.fillText(str,posicion,this.axisYLength-2);
+	
+	// Posicionamos el valor a 3/4 del camino desde el origen dibujado
+	str = "" + Math.floor(this.maxValue / 4);
+	posicion = this.axisYOffset-str.length*8;
+	ctx.fillText(str,posicion,10+this.axisYLength*3/4);
+	
+	// Posicionamos el valor a 1/4 del camino desde el origen dibujado
+	str = "" + Math.floor(this.maxValue * 3 / 4);
+	posicion = this.axisYOffset-str.length*8;
+	ctx.fillText(str,posicion,10+this.axisYLength/4);
+	
+}
+ 
+Graph.prototype.drawXAxis = function(){
+	// Dibuja el eje de X
+    var ctx = this.context;
+	
+	
+    ctx.beginPath();
+    ctx.strokeStyle = this.axisColor;
+    ctx.lineWidth = 2;
+    ctx.fillStyle = this.axisColor;
+    // Posiciona el cursor en la posicion donde el eje de X y el eje de Y se unen.
+    ctx.moveTo(this.axisYOffset, this.axisYLength);
+	
+    // Dibuja una linea desde el final del canvas donde se supone que empieza el
+    // eje de Y
+    ctx.lineTo(this.canvas.width,this.axisYLength);
+    ctx.stroke();
+};
+ 
+Graph.prototype.drawYAxis = function(){
+   // Dibuja la linea que representa el eje de Y
+    var ctx = this.context;
+    ctx.beginPath();
+   // Mueve el cursor a la posicion en donde se encuentra el eje de Y y el eje de X
+    ctx.moveTo(this.axisYOffset, this.canvas.height - this.axisYOffset);
+	
+    // Se tira una linea desde el offset del eje de Y hasta el origen (parte de arriba del canvas)
+    ctx.lineTo(this.axisYOffset, 0);
+    ctx.strokeStyle = this.axisColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+};
+
+Graph.prototype.gradient = function() {
+    // Usado para utilizar las opciones de imprimir gradientes para
+    // que las barras se vean mas elegantes.
+    var ctx = this.context;
+    var mygradient = ctx.createLinearGradient(0,0,0,255);
+    mygradient.addColorStop(1,"#FFAACC");
+    mygradient.addColorStop(0,"#111111");
+    ctx.fillStyle = mygradient;
+    ctx.fillRect(0,0,300,225);
+}
+
+Graph.prototype.drawBar = function(valor,color,leyenda,gradOn) {
+        // Creo esta referencia para no tener que escribir cada vez this.context
+        var ctx = this.context;
+     
+        // Se le suma el espacio que vamos a dejar entre barra y barra
+	// asi sabemos donde vamos a comenzar a dibujar la barra
+	this.prevBar += this.interBarOffset;
+
+        // Traduzcamos todo a (x1,y1) para facilitarnos
+	var x1 = new Number(this.prevBar);
+
+	// Recurde que la Y la calculamos desde la parte de arriba asi obtenemos el punto maximo que queremos
+	var y1 = new Number(this.axisYLength - valor * this.blockTicks);
+	var alto = new Number(valor * this.blockTicks - 1);
+	if (gradOn == 1) {
+		// El gradiente lo quiero hacia el lado asi que ambas y estan en 0
+		var mygradient = ctx.createLinearGradient(x1,0,x1 + this.barWidth,0);
+		// Donde empieza y donde termina el color
+		mygradient.addColorStop(0,color);
+		mygradient.addColorStop(1,"#212121");
+		ctx.fillStyle = mygradient;
+	}
+	else
+	    // Si el gradiente esta apagado rellena de un solo color
+	    ctx.fillStyle = color;
+	// (x1,y1) ancho y alto (acuerdate de que estas en el cuadrante 4)
+	ctx.fillRect(x1,y1,this.barWidth,alto);
+	
+	// Mueve offset para la proxima barra
+	this.prevBar += this.barWidth;
+	
+	// Ahora manejamos la leyenda
+	var str = new String(leyenda);
+	var fsize = 12;
+	
+	// Ajustamos la posicion para que la leyenda quede centralizada
+	// estimamos el ancho del font (hecho a ojo) de 6 pixeles.
+	var posicion = x1 + (this.barWidth-str.length*6)/2;
+	
+	ctx.font = "bold 12px sans-serif";
+	ctx.fillStyle = this.axisColor;
+	
+	// Escribimos empezando en posicion y 18 pixels mas abajo
+	// de donde comienza el eje de Y
+	ctx.fillText(str,posicion,this.axisYLength+18);
+	
+	
+	// Aqui ponemos el borde de las barras
+	ctx.beginPath();
+	ctx.strokeStyle = "#000000";
+	ctx.lineWidth = 1.2;
+	// Restamos 1 para hacer el borde un poco mas lejos que
+	// el rectangulo
+	x1--;
+	
+	// Linea de la izquierda
+	ctx.moveTo(x1, this.axisYLength);
+	ctx.lineTo(x1, y1);
+	
+	// Linea del tope
+	x1 += this.barWidth + 1;
+	ctx.lineTo(x1, y1-1);
+	// Linea de la derecha
+	ctx.lineTo(x1, this.axisYLength);
+	
+	// En realidad no se vacia el buffer hasta que se da este comando
+	ctx.stroke();  
+}
+
+  
+
+</script>
+<body bgcolor="#ECECEC">
+<center>
+<table style="border-style : solid solid solid solid; border-color: black;">
+<tr><th>Ejemplo del uso del canvas en<br>HTML 5</th></tr>
+<tr>
+<td bgcolor="white"><canvas bgcolor="white" id="myCanvas" width="620" height="400">
+</canvas>
+</td></tr>
+</table>
+<script language="javascript">
+function dibuja(bars_,max_y){
+    // bars es un parametro que obtiene el numero de barras a dibujar
+    // max_x obtiene el numero maximo en Y que va a tener el histograma
+
+    // Obten una referencia al elemento canvas llamado myCanvas
+	
+	
+    var canvas = document.getElementById("myCanvas"); 
+	
+    // Referencia a un objeto Graph 
+    // Aqui se invoca al constructor y se le pasan algunos parametros
+    var myGraph = new Graph({
+        canvas: canvas,		// Referencia al elemento canvas
+        maxValue: max_y,    // Y maxima (valor maximo del histograma)
+		bars: bars_,		// Cantidad de Barras a dibujar
+		gridOn : 1			// Enciende "Papel cuadriculado"
+    });	
+	
+	
+    // Dibuja las barras con los valores dados
+	myGraph.drawBar('1000',"#FF00AA","01/12",1);
+	myGraph.drawBar('500',"#AF7801",'02/12',1);
+	myGraph.drawBar('3000',"#FF00AA","03/12",0);
+	myGraph.drawBar('985',"#AF7801",'04/12',0);
+	myGraph.drawBar('400',"#FF00AA","05/12",1);
+	myGraph.drawBar('125',"#AF7801",'06/12',1);
+	
+};
+    dibuja('5','3200');	// Llamada a dibuja con 5 barras y el valor maximo
+</script>
+</center>
+</body>
+</html>
+
